@@ -124,6 +124,12 @@ check_not_running() {
     esac
 }
 
+create_plugins_dir() {
+   docker run --rm --entrypoint=/bin/sh \
+            -v /var/run:/var/run \
+            $SCOPE_IMAGE -c "mkdir -p /var/run/scope/plugins"
+}
+
 launch_command() {
     echo docker run --privileged -d --name=$SCOPE_CONTAINER_NAME --net=host --pid=host \
             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -181,6 +187,7 @@ EOF
         if ! check_docker_for_mac || check_probe_only ; then
             check_not_running $SCOPE_CONTAINER_NAME $SCOPE_IMAGE_NAME
             docker rm -f $SCOPE_CONTAINER_NAME >/dev/null 2>&1 || true
+            create_plugins_dir
             CONTAINER=$($(launch_command "$@"))
             echo $CONTAINER
         elif check_docker_for_mac ; then
@@ -196,6 +203,7 @@ EOF
             app_ip=$(docker inspect -f '{{.NetworkSettings.IPAddress}}' "${CONTAINER}")
             check_not_running $SCOPE_CONTAINER_NAME $SCOPE_IMAGE_NAME
             docker rm -f $SCOPE_CONTAINER_NAME >/dev/null 2>&1 || true
+            create_plugins_dir
             CONTAINER=$($(launch_command --no-app "$@" "${app_ip}:4040"))
             echo $CONTAINER
         fi
